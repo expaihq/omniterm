@@ -59,6 +59,7 @@ interface Registration {
 /** A stand-in for the tab registry that resolves once a browser registers. */
 function startRegistry(): Promise<{
   url: string;
+  pageUrl: string;
   received: Promise<Registration>;
   deleted: string[];
   close: () => void;
@@ -80,6 +81,12 @@ function startRegistry(): Promise<{
         deleted.push(req.url ?? '');
         res.writeHead(200, { 'content-type': 'application/json' });
         res.end('{}');
+        return;
+      }
+      // A local page for tests that need the launched browser to load
+      // something real without touching the network.
+      if (req.method === 'GET' && req.url === '/page') {
+        res.writeHead(200, { 'content-type': 'text/html' }).end('<title>omniterm-test</title>');
         return;
       }
       if (req.method !== 'POST' || !req.url?.endsWith('/browsers')) {
@@ -104,6 +111,7 @@ function startRegistry(): Promise<{
       const { port } = server.address() as { port: number };
       resolveServer({
         url: `http://127.0.0.1:${port}/t/test/registry`,
+        pageUrl: `http://127.0.0.1:${port}/page`,
         received,
         deleted,
         close: () => server.close(),
@@ -379,6 +387,118 @@ test('--close stops the browser and clears its singleton markers', { skip }, asy
     assert.ok(
       registry.deleted.length > 0,
       'the dead browser was never deregistered from the tab registry',
+    );
+  } finally {
+    registry.close();
+  }
+});
+
+/** Evaluate `expression` in a page target over a raw CDP socket. Uses only
+ *  Runtime.evaluate, which works without Runtime.enable. Rejects if the socket
+ *  errors or closes, or no reply arrives within `timeoutMs`, so a crashed
+ *  Chrome fails the test instead of hanging it. */
+async function evaluateInPage(
+  wsUrl: string,
+  expression: string,
+  timeoutMs = 10_000,
+): Promise<unknown> {
+  const ws = new WebSocket(wsUrl);
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await new Promise((resolve, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`no CDP reply within ${timeoutMs}ms: ${wsUrl}`)),
+        timeoutMs,
+      );
+      ws.onerror = () => reject(new Error(`CDP socket failed: ${wsUrl}`));
+      ws.onclose = () => reject(new Error(`CDP socket closed before replying: ${wsUrl}`));
+      ws.onmessage = (ev) => {
+        const msg = JSON.parse(String(ev.data)) as {
+          id?: number;
+          result?: { result?: { value?: unknown } };
+          error?: { message: string };
+        };
+        if (msg.id !== 1) return;
+        if (msg.error) reject(new Error(msg.error.message));
+        else resolve(msg.result?.result?.value);
+      };
+      ws.onopen = () =>
+        ws.send(
+          JSON.stringify({
+            id: 1,
+            method: 'Runtime.evaluate',
+            params: { expression, returnByValue: true },
+          }),
+        );
+    });
+  } finally {
+    clearTimeout(timer);
+    ws.onclose = null;
+    ws.close();
+  }
+}
+
+test('the launched browser does not report itself as automated', { skip }, async () => {
+  // Remote debugging turns on Chrome's AutomationControlled feature, which
+  // sets navigator.webdriver=true on every page even with no CDP client
+  // attached. Google sign-in and Cloudflare challenges read that flag and
+  // refuse the browser, so the shim launches Chrome with the feature off.
+  //
+  // This runs headless to keep windows off developers' screens, and
+  // `--headless` turns the feature on too. It still guards the headed case:
+  // the flag sits in the base argument list every launch shares, so dropping
+  // it fails this test in either mode.
+  const registry = await startRegistry();
+  const udd = mkdtempSync(path.join(tmpdir(), 'omnitest-udd-'));
+  udds.push(udd);
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      execFile(
+        path.join(BIN_DIR, 'open'),
+        [registry.pageUrl],
+        {
+          timeout: 60_000,
+          env: {
+            PATH: [BIN_DIR, path.dirname(process.execPath), '/usr/bin', '/bin'].join(':'),
+            HOME: udd,
+            OMNITERM_BROWSER_REGISTRY_URL: registry.url,
+            OMNITERM_BROWSER_UDD: path.join(udd, 'profile'),
+            OMNITERM_BROWSER_HEADLESS: '1',
+            ...(process.env.OMNITERM_CHROME_PATH
+              ? { OMNITERM_CHROME_PATH: process.env.OMNITERM_CHROME_PATH }
+              : {}),
+          },
+        },
+        (err) => (err ? reject(err) : resolve()),
+      );
+    });
+
+    const reg = await registry.received;
+    spawnedPids.push(reg.pid);
+    const port = new URL(reg.cdpUrl.replace('ws://', 'http://')).port;
+
+    // Wait for the tab the shim opened to finish loading our page.
+    let pageWs: string | undefined;
+    const deadline = Date.now() + 15_000;
+    while (!pageWs && Date.now() < deadline) {
+      const targets = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()) as {
+        type: string;
+        url: string;
+        title: string;
+        webSocketDebuggerUrl: string;
+      }[];
+      pageWs = targets.find(
+        (t) => t.type === 'page' && t.url === registry.pageUrl && t.title === 'omniterm-test',
+      )?.webSocketDebuggerUrl;
+      if (!pageWs) await new Promise((r) => setTimeout(r, 100));
+    }
+    assert.ok(pageWs, `the shim never loaded ${registry.pageUrl}`);
+
+    assert.equal(
+      await evaluateInPage(pageWs, 'navigator.webdriver'),
+      false,
+      'pages see navigator.webdriver=true, so Google and Cloudflare treat the browser as automated',
     );
   } finally {
     registry.close();
