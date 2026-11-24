@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { existsSync, lstatSync, mkdtempSync, readFileSync, readlinkSync, rmSync } from 'node:fs';
 import http from 'node:http';
-import { platform, tmpdir } from 'node:os';
+import { homedir, platform, tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -24,6 +24,14 @@ import { fileURLToPath } from 'node:url';
 // user's profile and never the shared ~/.omniterm/browser-profile, so running
 // this suite cannot disturb a browser the developer has open. Self-skips when
 // no Chrome/Chromium is installed; a skip is reported as a skip, never a pass.
+
+// Chrome launches get the developer's REAL home directory, not the temp dir.
+// On macOS, Chrome keeps its cookie key ("Chrome Safe Storage") in the default
+// keychain, which macOS finds under $HOME/Library/Keychains. A temp HOME has no
+// keychain, so every launch raised a system-modal "Keychain Not Found" dialog
+// that blocked the desktop. Isolation comes from OMNITERM_BROWSER_UDD, which
+// every launch below sets to a temp dir; HOME added none.
+const REAL_HOME = homedir();
 
 const BIN_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../bin');
 
@@ -194,7 +202,7 @@ test('open <url> in a tab registers a real browser with the tab registry', { ski
           timeout: 60_000,
           env: {
             PATH: [BIN_DIR, path.dirname(process.execPath), '/usr/bin', '/bin'].join(':'),
-            HOME: udd,
+            HOME: REAL_HOME,
             OMNITERM_BROWSER_REGISTRY_URL: registry.url,
             OMNITERM_BROWSER_UDD: path.join(udd, 'profile'),
             OMNITERM_BROWSER_HEADLESS: '1',
@@ -262,7 +270,7 @@ test('a non-URL `open` argument never launches a browser or registers', { skip }
           timeout: 30_000,
           env: {
             PATH: [BIN_DIR, path.dirname(process.execPath), '/usr/bin', '/bin'].join(':'),
-            HOME: udd,
+            HOME: REAL_HOME,
             OMNITERM_BROWSER_REGISTRY_URL: registry.url,
             OMNITERM_BROWSER_UDD: path.join(udd, 'profile'),
             OMNITERM_BROWSER_HEADLESS: '1',
@@ -298,7 +306,7 @@ function runShim(args: string[], udd: string, registryUrl: string): Promise<void
         timeout: 60_000,
         env: {
           PATH: [BIN_DIR, path.dirname(process.execPath), '/usr/bin', '/bin'].join(':'),
-          HOME: udd,
+          HOME: REAL_HOME,
           OMNITERM_BROWSER_REGISTRY_URL: registryUrl,
           OMNITERM_BROWSER_UDD: path.join(udd, 'profile'),
           OMNITERM_BROWSER_HEADLESS: '1',
@@ -461,7 +469,7 @@ test('the launched browser does not report itself as automated', { skip }, async
           timeout: 60_000,
           env: {
             PATH: [BIN_DIR, path.dirname(process.execPath), '/usr/bin', '/bin'].join(':'),
-            HOME: udd,
+            HOME: REAL_HOME,
             OMNITERM_BROWSER_REGISTRY_URL: registry.url,
             OMNITERM_BROWSER_UDD: path.join(udd, 'profile'),
             OMNITERM_BROWSER_HEADLESS: '1',
