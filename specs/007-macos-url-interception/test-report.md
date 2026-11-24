@@ -29,7 +29,7 @@ left uncovered. Facts only — no graded confidence verdict.
 
 ## Source Material
 
-- Source material used: [issue #25](https://github.com/engianx/omniterm/issues/25);
+- Source material used: [issue #25](https://github.com/expaihq/omniterm/issues/25);
   `specs/001-omniterm-core/spec.md` (US1 **P1** + FR-010–FR-013; US2 **P2**);
   the working-tree diff; `packages/core/bin/{open,xdg-open,omniterm-browser.js}`.
 - Source material not found or not available: no repo-root `TESTING.md` (the

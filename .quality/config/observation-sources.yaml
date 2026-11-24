@@ -25,7 +25,7 @@ profiles:
         - "GITHUB_TOKEN"
 
     github:
-      repo: "engianx/omniterm"
+      repo: "expaihq/omniterm"
       workflow: "publish-host.yml"
       artifact_names:
         - "quality-host-observations"

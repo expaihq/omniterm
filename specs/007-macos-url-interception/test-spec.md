@@ -1,6 +1,6 @@
 # Test Spec: macOS URL interception (`open <url>` → tab browser registry)
 
-**Scope**: ticket — [issue #25](https://github.com/engianx/omniterm/issues/25)
+**Scope**: ticket — [issue #25](https://github.com/expaihq/omniterm/issues/25)
 **Source material**: issue #25; `specs/001-omniterm-core/spec.md` (User Story 1 *Persistent terminals* — Priority **P1**, FR-010–FR-013; User Story 2 *Watch a browser a command drives* — Priority **P2**); the working-tree change (`packages/core/bin/open`, `packages/core/plugins/terminal/lib/{tmux,sessions}.ts`, packaging)
 **Testing posture**: no repo-root `TESTING.md` — the baked-in default applies
 **Test report**: [test-report.md](./test-report.md)
