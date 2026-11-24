@@ -256,6 +256,10 @@
   background: var(--bg-tertiary);
 }
 
+.dirItem:hover .deleteBtn {
+  opacity: 1;
+}
+
 .dirItem.active {
   background: var(--accent);
   color: var(--text-bright);
