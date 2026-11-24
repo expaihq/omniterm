@@ -206,10 +206,17 @@ function chromeArgs(includeDebugFlags, headless = HEADLESS_GUESS) {
   // unclosable tab in the omniterm browser panel.
   // --no-default-browser-check: same spirit — skip a promo prompt this
   // dedicated, non-interactive-by-default profile has no use for.
+  // --disable-blink-features=AutomationControlled: remote debugging (and
+  // headless) turns this Blink feature on, and it sets navigator.webdriver=true
+  // on every page even with no CDP client attached. Google sign-in and
+  // Cloudflare challenges read that and refuse the browser as automated. CDP
+  // keeps working with it off. Chrome shows a dismissable "unsupported
+  // command-line flag" bar for it.
   const args = [
     `--user-data-dir=${UDD}`,
     '--no-first-run',
     '--no-default-browser-check',
+    '--disable-blink-features=AutomationControlled',
   ];
   if (includeDebugFlags) {
     args.push(
