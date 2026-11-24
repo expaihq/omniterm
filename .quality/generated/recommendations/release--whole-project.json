@@ -39,7 +39,7 @@
         "status": "valid",
         "transport": "github-actions",
         "run_id": 31143494315,
-        "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315",
+        "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315",
         "commit": "c3eb1375803bccf774030e99b2f980a12a175486",
         "branch": "main",
         "observed_at": "2026-08-07T03:12:38.000Z"
@@ -60,7 +60,7 @@
           "test_case": "a repo with a unique name is labelled with just that name",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/app/components/repoLabels.test.ts:same-named repos are qualified by their parent directory",
@@ -70,7 +70,7 @@
           "test_case": "same-named repos are qualified by their parent directory",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/app/components/repoLabels.test.ts:qualifiers widen until they actually distinguish the repos",
@@ -80,7 +80,7 @@
           "test_case": "qualifiers widen until they actually distinguish the repos",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/app/components/repoLabels.test.ts:collisions are grouped per name, leaving unique repos unqualified",
@@ -90,7 +90,7 @@
           "test_case": "collisions are grouped per name, leaving unique repos unqualified",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/app/worktreeDelete.test.ts:worktreeDeleteUrl forces only when dirty",
@@ -100,7 +100,7 @@
           "test_case": "worktreeDeleteUrl forces only when dirty",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/app/worktreeDelete.test.ts:worktreeDeleteUrl encodes the id so special chars do not break the URL",
@@ -110,7 +110,7 @@
           "test_case": "worktreeDeleteUrl encodes the id so special chars do not break the URL",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/app/worktreeDelete.test.ts:worktreeStatusUrl encodes the id like the delete URL",
@@ -120,7 +120,7 @@
           "test_case": "worktreeStatusUrl encodes the id like the delete URL",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/app/worktreeDelete.test.ts:probeIsDirty: explicit dirty flag from a 2xx response is honored",
@@ -130,7 +130,7 @@
           "test_case": "probeIsDirty: explicit dirty flag from a 2xx response is honored",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/app/worktreeDelete.test.ts:probeIsDirty fails safe to dirty for anything but an explicit clean signal",
@@ -140,7 +140,7 @@
           "test_case": "probeIsDirty fails safe to dirty for anything but an explicit clean signal",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/lib/ids.test.ts:same-named repos in different directories get different ids",
@@ -150,7 +150,7 @@
           "test_case": "same-named repos in different directories get different ids",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/lib/ids.test.ts:worktree ids are unique across repos that share a directory name",
@@ -160,7 +160,7 @@
           "test_case": "worktree ids are unique across repos that share a directory name",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/lib/ids.test.ts:ids are stable across calls and insensitive to path spelling",
@@ -170,7 +170,7 @@
           "test_case": "ids are stable across calls and insensitive to path spelling",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/lib/ids.test.ts:a symlinked spelling of a worktree path yields the same id as the real path",
@@ -180,7 +180,7 @@
           "test_case": "a symlinked spelling of a worktree path yields the same id as the real path",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/lib/ids.test.ts:repo ids keep two tracked paths that alias one directory distinct",
@@ -190,7 +190,7 @@
           "test_case": "repo ids keep two tracked paths that alias one directory distinct",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/lib/ids.test.ts:displayNameForPath keeps the tracked spelling of a symlinked repo",
@@ -200,7 +200,7 @@
           "test_case": "displayNameForPath keeps the tracked spelling of a symlinked repo",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/lib/ids.test.ts:ids only use characters safe in URLs, tmux targets, and registry keys",
@@ -210,7 +210,7 @@
           "test_case": "ids only use characters safe in URLs, tmux targets, and registry keys",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/lib/ids.test.ts:displayNameForPath strips a bare repo .git suffix",
@@ -220,7 +220,7 @@
           "test_case": "displayNameForPath strips a bare repo .git suffix",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/lib/ids.test.ts:a bare .git directory is named after its parent, never blank",
@@ -230,7 +230,7 @@
           "test_case": "a bare .git directory is named after its parent, never blank",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/lib/ids.test.ts:a worktree id computed before the directory exists is not cached",
@@ -240,7 +240,7 @@
           "test_case": "a worktree id computed before the directory exists is not cached",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         },
         {
           "observation_id": "quality-observations:31143494315:quality-host-observations/quality-observations.json:packages/core/lib/removeRepo.test.ts:removeRepo removes clean worktrees, keeps dirty ones, and never reports the main worktree",
@@ -250,7 +250,7 @@
           "test_case": "removeRepo removes clean worktrees, keeps dirty ones, and never reports the main worktree",
           "source_id": "publish-host",
           "source_label": "Publish @omniterm/host",
-          "run_url": "https://github.com/engianx/omniterm/actions/runs/31143494315"
+          "run_url": "https://github.com/expaihq/omniterm/actions/runs/31143494315"
         }
       ],
       "ambiguous_examples": []
