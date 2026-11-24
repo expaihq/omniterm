@@ -1,6 +1,6 @@
 # @omniterm/plugin-types
 
-The type-only contract between [omniterm](https://github.com/engianx/omniterm) and
+The type-only contract between [omniterm](https://github.com/expaihq/omniterm) and
 its tab-type plugins. Every export is a TypeScript `interface` or `type` — there is
 no runtime code, and every import of this package is erased at build time.
 

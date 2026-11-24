@@ -8,7 +8,7 @@ cloud VM with no desktop — then open it from a laptop, tablet, or phone. Your
 terminal sessions keep running when you close the browser or lose your
 connection.
 
-![omniterm web interface](https://raw.githubusercontent.com/engianx/omniterm/main/docs/assets/omniterm-screenshot.png)
+![omniterm web interface](https://raw.githubusercontent.com/expaihq/omniterm/main/docs/assets/omniterm-screenshot.png)
 
 ## Why use omniterm?
 
@@ -106,7 +106,7 @@ Run `omniterm --help` to see every command-line option.
 When something in your terminal opens a URL — a sign-in flow, a coding agent —
 Chrome starts on the server and appears in omniterm as a live view.
 
-![Interactive remote browser in omniterm](https://raw.githubusercontent.com/engianx/omniterm/main/docs/assets/remote-browser-screenshot.png)
+![Interactive remote browser in omniterm](https://raw.githubusercontent.com/expaihq/omniterm/main/docs/assets/remote-browser-screenshot.png)
 
 - Click, type, and scroll the remote page from any device.
 - Finish sign-in flows on a server without a desktop.
@@ -210,7 +210,7 @@ To write a plugin, install
 [`@omniterm/plugin-types`](https://www.npmjs.com/package/@omniterm/plugin-types)
 as a development dependency. Your plugin does not need to depend on omniterm's
 internal code. See the
-[`demo-agent` plugin](https://github.com/engianx/omniterm/tree/main/plugins/demo-agent)
+[`demo-agent` plugin](https://github.com/expaihq/omniterm/tree/main/plugins/demo-agent)
 for a complete example.
 
 ## Telemetry
@@ -276,10 +276,10 @@ stops.
 ## Contributing
 
 See the
-[`CONTRIBUTING.md`](https://github.com/engianx/omniterm/blob/main/CONTRIBUTING.md)
+[`CONTRIBUTING.md`](https://github.com/expaihq/omniterm/blob/main/CONTRIBUTING.md)
 guide for development setup, repository structure, tests, and project
 conventions.
 
 ## License
 
-[MIT](https://github.com/engianx/omniterm/blob/main/LICENSE)
+[MIT](https://github.com/expaihq/omniterm/blob/main/LICENSE)

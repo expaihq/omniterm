@@ -5,12 +5,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/engianx/omniterm.git",
+    "url": "git+https://github.com/expaihq/omniterm.git",
     "directory": "apps/omniterm"
   },
-  "homepage": "https://github.com/engianx/omniterm#readme",
+  "homepage": "https://github.com/expaihq/omniterm#readme",
   "bugs": {
-    "url": "https://github.com/engianx/omniterm/issues"
+    "url": "https://github.com/expaihq/omniterm/issues"
   },
   "keywords": [
     "omniterm",
