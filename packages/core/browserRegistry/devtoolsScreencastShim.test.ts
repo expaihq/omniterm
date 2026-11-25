@@ -313,6 +313,7 @@ async function loadShim(): Promise<{
     split: SplitLike,
     position: string,
   ) => { ok: boolean; reason?: string };
+  resolveScreencastParts: (app: unknown) => { split: unknown; view: unknown } | null;
 }> {
   const documentElement = { setAttribute() {}, removeAttribute() {} };
   const globals = globalThis as unknown as Record<string, unknown>;
@@ -580,6 +581,75 @@ test('applyInspectorPosition reports rather than throws on a changed SplitWidget
   assert.equal(applyInspectorPosition({}, 'hidden').ok, false);
   assert.equal(applyInspectorPosition({}, 'right').ok, false);
   assert.equal(applyInspectorPosition({ hideSidebar: () => {} }, 'sideways').ok, false);
+});
+
+// --- Finding the split and the view ---------------------------------------
+//
+// Chrome 158 made every ScreencastApp field private and moved the split onto a
+// lit-rendered <devtools-split-view>. The shim kept polling for the old public
+// fields, never found them, and left stock DevTools in place. The real-Chrome
+// check is devtoolsScreencastShim.integration.test.ts; these pin each shape.
+
+/** Models a Chrome 158 widget host element: `getWidget()` returns its widget. */
+function widgetElement(widget: unknown, children: Record<string, unknown> = {}) {
+  return {
+    getWidget: () => widget,
+    querySelector: (selector: string) => children[selector] ?? null,
+  };
+}
+
+/** A Chrome 158 ScreencastApp, rendered as far as `stage` says. */
+function chrome158App(stage: 'no-root' | 'no-split' | 'no-main' | 'ready') {
+  const split = { name: 'split' };
+  const view = { name: 'view' };
+  const main = widgetElement(view);
+  const splitElement = widgetElement(
+    split,
+    stage === 'no-main' ? {} : { ':scope > devtools-widget[slot="main"]': main },
+  );
+  const contentElement = {
+    querySelector: (selector: string) =>
+      selector === 'devtools-split-view' && stage !== 'no-split' ? splitElement : null,
+  };
+  return {
+    app: stage === 'no-root' ? {} : { rootView: { contentElement } },
+    split,
+    view,
+  };
+}
+
+test('resolveScreencastParts reads the public fields of Chrome 157 and earlier', async () => {
+  const { resolveScreencastParts } = await loadShim();
+  const split = { name: 'split' };
+  const view = { name: 'view' };
+
+  assert.deepEqual(
+    resolveScreencastParts({ rootSplitWidget: split, screencastView: view }),
+    { split, view },
+  );
+});
+
+test('resolveScreencastParts finds both widgets through the Chrome 158 split element', async () => {
+  const { resolveScreencastParts } = await loadShim();
+  const { app, split, view } = chrome158App('ready');
+
+  const parts = resolveScreencastParts(app);
+  assert.ok(parts, 'expected both parts from the <devtools-split-view> element');
+  assert.equal(parts.split, split);
+  assert.equal(parts.view, view);
+});
+
+test('resolveScreencastParts keeps the poll waiting while DevTools is half-built', async () => {
+  const { resolveScreencastParts } = await loadShim();
+
+  assert.equal(resolveScreencastParts(undefined), null);
+  // presentUI() has not run, the split has not rendered, or modelAdded() has
+  // not yet put the screencast in the main slot.
+  for (const stage of ['no-root', 'no-split', 'no-main'] as const) {
+    assert.equal(resolveScreencastParts(chrome158App(stage).app), null, stage);
+  }
+  // Chrome 157 before modelAdded(): the split exists, the view does not yet.
+  assert.equal(resolveScreencastParts({ rootSplitWidget: {} }), null);
 });
 
 // --- Clipboard bridge ----------------------------------------------------

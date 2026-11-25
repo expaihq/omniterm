@@ -95,6 +95,40 @@ export function applyInspectorPosition(split, position) {
 }
 
 /**
+ * Find the SplitWidget and ScreencastView inside ScreencastApp, or null while
+ * DevTools is still building them.
+ *
+ * Two shapes are supported, tried in order:
+ *
+ * - Chrome 157 and earlier: public `rootSplitWidget` and `screencastView`
+ *   fields, set in presentUI() and modelAdded().
+ * - Chrome 158: every ScreencastApp field is private. presentUI() renders a
+ *   `<devtools-split-view>` with lit into `rootView.contentElement`, and the
+ *   ScreencastView lives in its `<devtools-widget slot="main">`. Both elements
+ *   expose their legacy widget through the public `getWidget()`, and those are
+ *   the same SplitWidget and ScreencastView objects the older fields held.
+ *
+ * On Chrome 158 the main slot is rendered only once modelAdded() has a
+ * ScreenCaptureModel, and the widget directive assigns that model in the same
+ * synchronous call that constructs the view. So a view found here already has
+ * its `inputModel`, as it did on the older shape.
+ */
+export function resolveScreencastParts(app) {
+  if (app?.rootSplitWidget && app?.screencastView) {
+    return { split: app.rootSplitWidget, view: app.screencastView };
+  }
+  const splitElement = app?.rootView?.contentElement?.querySelector?.('devtools-split-view');
+  const split = splitElement?.getWidget?.();
+  const view = splitElement
+    // Direct children only: a slot can only take its host's own children, and
+    // a deeper match would be some split nested inside InspectorView.
+    ?.querySelector?.(':scope > devtools-widget[slot="main"]')
+    ?.getWidget?.();
+  if (!split || !view) return null;
+  return { split, view };
+}
+
+/**
  * Serialized, debounced wrapper around ScreencastView.onResize().
  *
  * Calling onResize() directly is unsafe. It calls stopCasting(), which bails
@@ -175,7 +209,7 @@ export function createRefitScheduler(view) {
  * still degrades to stock rather than throwing.
  *
  * Resolve the DOM elements at use, never at install time. The shim installs
- * as soon as ScreencastApp exposes screencastView and rootSplitWidget, and on
+ * as soon as resolveScreencastParts finds the split and the view, and on
  * Chrome 153 the view's own DOM (.screencast-viewport, the canvas) is not built
  * yet at that moment — resolving once up front returns null and degrades a
  * screencast that would have worked a moment later.
@@ -816,9 +850,10 @@ async function placeInspector() {
     // with its inspector and border, even though every API it needed was
     // present and working the entire time.
     //
-    // So gate on what this code actually consumes — a ScreencastApp exposing
-    // both `screencastView` and `rootSplitWidget` — instead of on a DOM class
-    // that Chrome is free to rename. Measured on Chrome 153: instance() does not
+    // So gate on what this code actually consumes — the SplitWidget and the
+    // ScreencastView, however this Chrome exposes them (see
+    // resolveScreencastParts) — instead of on a DOM class that Chrome is free
+    // to rename. Measured on Chrome 153: instance() does not
     // throw when called early, returns an app missing those fields, and does NOT
     // cache that half-built state — the next poll 100ms later yields a usable
     // one. instance() is still wrapped, because a Chrome that DOES throw during
@@ -832,21 +867,24 @@ async function placeInspector() {
       await sleep(POLL_INTERVAL_MS);
       continue;
     }
-    const split = app?.rootSplitWidget;
-    if (!app?.screencastView || !split) {
+    const parts = resolveScreencastParts(app);
+    if (!parts) {
       await sleep(POLL_INTERVAL_MS);
       continue;
     }
+    const { split, view } = parts;
 
     // Both parts exist (the poll above guarantees it), which also means the page
-    // target has arrived — applying the choice before modelAdded() calls
-    // showBoth() would let that later call overwrite it.
+    // target has arrived — applying the choice before modelAdded() shows both
+    // halves would let that later call overwrite it. On Chrome 158 that is the
+    // lit render which flips `show` to "both", and it renders the main slot
+    // in the same pass, so finding the view still means it has already run.
     //
     // Install the frame overrides before touching the split. Every placement
     // triggers a Widget resize, and the resize path must already be running
     // through the serialized refit scheduler when it does.
-    const frame = installCompactScreencastFrame(app.screencastView);
-    const clipboard = installScreencastClipboard(app.screencastView);
+    const frame = installCompactScreencastFrame(view);
+    const clipboard = installScreencastClipboard(view);
 
     currentStage = `place inspector on ${requestedPosition}`;
     const applied = applyInspectorPosition(split, requestedPosition);
