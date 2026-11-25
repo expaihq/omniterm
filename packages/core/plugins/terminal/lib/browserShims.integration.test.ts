@@ -512,3 +512,229 @@ test('the launched browser does not report itself as automated', { skip }, async
     registry.close();
   }
 });
+
+// --- Occluded windows -----------------------------------------------------
+//
+// On macOS (and Windows) Chrome marks a page hidden when its window is fully
+// covered by other windows, sitting on another Space, or off screen. The user
+// watches OmniTerm's browser through the screencast, not through Chrome's own
+// window, so that window is usually covered. A hidden page stops producing
+// screencast frames, and DevTools greys the browser view out with "The tab is
+// inactive". The shim launches Chrome with --disable-backgrounding-occluded-
+// windows so covering the window no longer hides the page. It does not change
+// minimized windows or background tabs; the browser view already activates
+// the tab it shows.
+
+const OCCLUSION_FLAG = '--disable-backgrounding-occluded-windows';
+
+/** Launch Chrome through the real `open` shim and wait for it to register. */
+async function launchThroughOpen(headless: boolean) {
+  const registry = await startRegistry();
+  const udd = mkdtempSync(path.join(tmpdir(), 'omnitest-udd-'));
+  udds.push(udd);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      execFile(
+        path.join(BIN_DIR, 'open'),
+        [registry.pageUrl],
+        {
+          timeout: 60_000,
+          env: {
+            PATH: [BIN_DIR, path.dirname(process.execPath), '/usr/bin', '/bin'].join(':'),
+            HOME: REAL_HOME,
+            OMNITERM_BROWSER_REGISTRY_URL: registry.url,
+            OMNITERM_BROWSER_UDD: path.join(udd, 'profile'),
+            OMNITERM_BROWSER_HEADLESS: headless ? '1' : '0',
+            ...(process.env.OMNITERM_CHROME_PATH
+              ? { OMNITERM_CHROME_PATH: process.env.OMNITERM_CHROME_PATH }
+              : {}),
+            ...(process.env.DISPLAY ? { DISPLAY: process.env.DISPLAY } : {}),
+            ...(process.env.WAYLAND_DISPLAY
+              ? { WAYLAND_DISPLAY: process.env.WAYLAND_DISPLAY }
+              : {}),
+          },
+        },
+        (err) => (err ? reject(err) : resolve()),
+      );
+    });
+    const reg = await registry.received;
+    spawnedPids.push(reg.pid);
+    return { registry, udd, reg, port: new URL(reg.cdpUrl.replace('ws://', 'http://')).port };
+  } catch (err) {
+    registry.close();
+    throw err;
+  }
+}
+
+test('the launched browser keeps pages visible when its window is covered', { skip }, async () => {
+  // Runs headless, so there is no window to cover; it checks that the flag
+  // reaches the real browser process. The flag sits in the base argument list
+  // every launch shares, so dropping it fails this test in either mode. The
+  // behaviour itself is the headed test below.
+  const { registry, udd } = await launchThroughOpen(true);
+  try {
+    // The browser that owns the profile, not the pid we spawned: on macOS
+    // Chrome re-execs and the spawned process exits.
+    const owner = owningPid(path.join(udd, 'profile'));
+    assert.ok(owner, 'the launched Chrome never took the profile lock');
+    const commandLine = await new Promise<string>((resolve, reject) => {
+      execFile('ps', ['-ww', '-o', 'command=', '-p', String(owner)], (err, stdout) =>
+        err ? reject(err) : resolve(stdout),
+      );
+    });
+    assert.ok(
+      commandLine.split(/\s+/).includes(OCCLUSION_FLAG),
+      `Chrome was launched without ${OCCLUSION_FLAG}, so covering its window greys out ` +
+        `the browser view with "The tab is inactive". Command line: ${commandLine.trim()}`,
+    );
+  } finally {
+    registry.close();
+  }
+});
+
+/** A browser-level CDP connection that can address page sessions (flatten mode). */
+async function connectBrowserCdp(wsUrl: string) {
+  const ws = new WebSocket(wsUrl);
+  await new Promise<void>((resolve, reject) => {
+    ws.onopen = () => resolve();
+    ws.onerror = () => reject(new Error(`CDP socket failed: ${wsUrl}`));
+  });
+  let nextId = 0;
+  const pending = new Map<number, { resolve: (v: any) => void; reject: (e: Error) => void }>();
+  const listeners: Array<(msg: { method: string; params: any; sessionId?: string }) => void> = [];
+  ws.onmessage = (ev) => {
+    const msg = JSON.parse(String(ev.data));
+    if (msg.id !== undefined) {
+      const waiter = pending.get(msg.id);
+      pending.delete(msg.id);
+      if (msg.error) waiter?.reject(new Error(`${msg.error.message}`));
+      else waiter?.resolve(msg.result);
+    } else if (msg.method) {
+      for (const listener of listeners) listener(msg);
+    }
+  };
+  return {
+    send(method: string, params: object = {}, sessionId?: string): Promise<any> {
+      const id = ++nextId;
+      ws.send(JSON.stringify({ id, method, params, sessionId }));
+      return new Promise((resolve, reject) => {
+        pending.set(id, { resolve, reject });
+        setTimeout(() => reject(new Error(`no CDP reply to ${method}`)), 10_000);
+      });
+    },
+    on(listener: (msg: { method: string; params: any; sessionId?: string }) => void) {
+      listeners.push(listener);
+    },
+    close: () => ws.close(),
+  };
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+test(
+  'headed: covering the browser window does not stop the screencast',
+  {
+    skip:
+      skip ||
+      (process.env.OMNITERM_TEST_HEADED === '1'
+        ? false
+        : 'opens Chrome windows on screen; set OMNITERM_TEST_HEADED=1 to run'),
+  },
+  async () => {
+    const { registry, port } = await launchThroughOpen(false);
+    const version = (await (await fetch(`http://127.0.0.1:${port}/json/version`)).json()) as {
+      webSocketDebuggerUrl: string;
+    };
+    const cdp = await connectBrowserCdp(version.webSocketDebuggerUrl);
+    try {
+      let pageId: string | undefined;
+      const deadline = Date.now() + 15_000;
+      while (!pageId && Date.now() < deadline) {
+        const { targetInfos } = await cdp.send('Target.getTargets');
+        pageId = (targetInfos as { targetId: string; type: string; url: string }[]).find(
+          (t) => t.type === 'page' && t.url === registry.pageUrl,
+        )?.targetId;
+        if (!pageId) await sleep(100);
+      }
+      assert.ok(pageId, `the shim never loaded ${registry.pageUrl}`);
+
+      const { sessionId } = await cdp.send('Target.attachToTarget', {
+        targetId: pageId,
+        flatten: true,
+      });
+      // What DevTools' ScreencastView listens to: `visible: false` here is
+      // exactly what raises its "The tab is inactive" glass pane.
+      const visibilityEvents: boolean[] = [];
+      cdp.on((msg) => {
+        if (msg.sessionId !== sessionId) return;
+        if (msg.method === 'Page.screencastVisibilityChanged') {
+          visibilityEvents.push(msg.params.visible);
+        } else if (msg.method === 'Page.screencastFrame') {
+          void cdp
+            .send('Page.screencastFrameAck', { sessionId: msg.params.sessionId }, sessionId)
+            .catch(() => {});
+        }
+      });
+      await cdp.send('Page.enable', {}, sessionId);
+      await cdp.send('Page.startScreencast', { format: 'jpeg', maxWidth: 400, maxHeight: 300 }, sessionId);
+      const visibility = async () =>
+        (
+          await cdp.send(
+            'Runtime.evaluate',
+            { expression: 'document.visibilityState', returnByValue: true },
+            sessionId,
+          )
+        ).result.value as string;
+
+      const { windowId } = await cdp.send('Browser.getWindowForTarget', { targetId: pageId });
+      await cdp.send('Browser.setWindowBounds', {
+        windowId,
+        bounds: { left: 120, top: 120, width: 600, height: 400, windowState: 'normal' },
+      });
+      await sleep(1_500);
+      assert.equal(await visibility(), 'visible', 'the page should start out visible');
+
+      // Cover the page's window completely with a second, larger window.
+      const { targetId: cover } = await cdp.send('Target.createTarget', {
+        url: 'about:blank',
+        newWindow: true,
+      });
+      const { windowId: coverWindow } = await cdp.send('Browser.getWindowForTarget', {
+        targetId: cover,
+      });
+      assert.notEqual(coverWindow, windowId, 'the cover must be its own window');
+      await cdp.send('Browser.setWindowBounds', {
+        windowId: coverWindow,
+        bounds: { left: 60, top: 60, width: 900, height: 650 },
+      });
+      await cdp.send('Target.activateTarget', { targetId: cover });
+      // macOS reports occlusion asynchronously, after the window server
+      // settles.
+      await sleep(3_500);
+      const whileCovered = await visibility();
+      const eventsWhileCovered = [...visibilityEvents];
+      await cdp.send('Target.closeTarget', { targetId: cover });
+
+      // Control: a minimized window is hidden with or without the flag. If
+      // this stays visible, the measurement above proves nothing.
+      await cdp.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'minimized' } });
+      await sleep(2_500);
+      const whileMinimized = await visibility();
+      await cdp.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'normal' } });
+
+      assert.equal(whileMinimized, 'hidden', 'control failed: this harness cannot observe hiding');
+      assert.equal(
+        whileCovered,
+        'visible',
+        'covering the window hid the page, which greys the browser view out with "The tab is inactive"',
+      );
+      assert.ok(
+        !eventsWhileCovered.includes(false),
+        `the screencast reported the page invisible while covered: ${JSON.stringify(eventsWhileCovered)}`,
+      );
+    } finally {
+      cdp.close();
+      registry.close();
+    }
+  },
+);
