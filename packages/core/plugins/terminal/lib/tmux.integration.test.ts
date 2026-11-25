@@ -143,12 +143,40 @@ function assertCleanPaneEnv(lines: string[], label: string) {
   );
 }
 
-after(() => {
-  if (TMUX_BIN) {
-    try {
-      execFileSync(TMUX_BIN, ['kill-server'], { stdio: 'ignore' });
-    } catch {}
+/**
+ * Stop the isolated tmux server and wait for every pane process to exit.
+ *
+ * kill-server returns as soon as it has sent SIGHUP. The pane shells exit
+ * after that, and an interactive bash saves its history into $HOME (WORK) on
+ * the way out, so deleting WORK straight after kill-server races that write.
+ */
+async function stopIsolatedServer(): Promise<void> {
+  let panePids: number[] = [];
+  try {
+    panePids = tmux(['list-panes', '-a', '-F', '#{pane_pid}'])
+      .split('\n')
+      .map(Number)
+      .filter((pid) => pid > 0);
+  } catch {
+    // No server running: nothing to stop or wait for.
   }
+  try {
+    execFileSync(TMUX_BIN!, ['kill-server'], { stdio: 'ignore' });
+  } catch {}
+  const alive = (pid: number) => {
+    try {
+      process.kill(pid, 0);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const deadline = Date.now() + 10_000;
+  while (panePids.some(alive) && Date.now() < deadline) await sleep(50);
+}
+
+after(async () => {
+  if (TMUX_BIN) await stopIsolatedServer();
   for (const dir of [WORK, SOCK_DIR]) rmSync(dir, { recursive: true, force: true });
 });
 
@@ -341,4 +369,31 @@ test('createTmuxSession: the omniterm bin dir leads a pane PATH even when a prof
   } finally {
     execFileSync('rm', ['-f', profile]);
   }
+});
+
+// Keep this test LAST: it stops the shared isolated server.
+test('stopping the server waits for pane shells to finish writing into WORK', { skip }, async () => {
+  // HOME is WORK, and an interactive bash saves its history to
+  // $HOME/.bash_history when kill-server's SIGHUP reaches it. kill-server
+  // returns before that, so the `after` hook's rmSync(WORK) raced the write
+  // and CI failed with ENOTEMPTY. This pane writes into WORK a fixed time
+  // after SIGHUP, which makes the same race deterministic.
+  const late = path.join(WORK, 'late-write');
+  tmux([
+    'new-session',
+    '-d',
+    '-s',
+    'it-teardown',
+    `bash -c 'trap "sleep 0.4; echo done > ${late}; exit" HUP; while :; do sleep 0.1; done'`,
+  ]);
+  await pollFor('teardown pane', () =>
+    tmux(['list-panes', '-t', '=it-teardown:', '-F', '#{pane_dead}']).trim() === '0' ? true : null,
+  );
+
+  await stopIsolatedServer();
+
+  assert.ok(
+    existsSync(late),
+    'stopIsolatedServer returned while a pane shell was still writing into WORK',
+  );
 });
