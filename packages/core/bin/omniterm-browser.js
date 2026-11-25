@@ -212,11 +212,19 @@ function chromeArgs(includeDebugFlags, headless = HEADLESS_GUESS) {
   // Cloudflare challenges read that and refuse the browser as automated. CDP
   // keeps working with it off. Chrome shows a dismissable "unsupported
   // command-line flag" bar for it.
+  // --disable-backgrounding-occluded-windows: on macOS and Windows Chrome
+  // marks a page hidden when its window is covered by other windows, on
+  // another Space, or off screen. The user watches this browser through
+  // OmniTerm's screencast, so its own window is usually covered, and a hidden
+  // page stops sending screencast frames: DevTools greys the browser view out
+  // with "The tab is inactive". Minimized windows and background tabs still
+  // hide the page; the browser view activates the tab it shows.
   const args = [
     `--user-data-dir=${UDD}`,
     '--no-first-run',
     '--no-default-browser-check',
     '--disable-blink-features=AutomationControlled',
+    '--disable-backgrounding-occluded-windows',
   ];
   if (includeDebugFlags) {
     args.push(
